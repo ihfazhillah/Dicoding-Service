@@ -2,13 +2,33 @@ package com.ihfazh.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.View;
 import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private Button startService, startIntentService, startBoundService, stopBoundService;
+
+    private boolean mServiceBound = false;
+    private MyBindService myBindService;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            MyBindService.MyBinder myBinder = (MyBindService.MyBinder) iBinder;
+            myBinder.getService();
+            mServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mServiceBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,11 +62,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.start_bound_service:
+                Intent boundIntent = new Intent(MainActivity.this, MyBindService.class);
+                bindService(boundIntent, serviceConnection, BIND_AUTO_CREATE);
                 break;
 
             case R.id.stop_bound_service:
+                unbindService(serviceConnection);
                 break;
         }
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mServiceBound){
+            unbindService(serviceConnection);
+        }
     }
 }
